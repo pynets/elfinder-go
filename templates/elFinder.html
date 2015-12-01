@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>elfinder</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2" />
+
+		<!-- jQuery and jQuery UI (REQUIRED) -->
+		<link rel="stylesheet" type="text/css" href="/css/jquery-ui.css">
+		<script src="/js/jquery.js"></script>
+		<script src="/js/jquery-ui.min.js"></script>
+
+		<!-- elFinder CSS (REQUIRED) -->
+		<link rel="stylesheet" type="text/css" href="/css/elfinder/elfinder.min.css">
+		<link rel="stylesheet" type="text/css" href="/css/elfinder/theme.css">
+
+		<!-- elFinder JS (REQUIRED) -->
+		<script src="/js/elfinder/elfinder.min.js"></script>
+
+		<!-- elFinder initialization (REQUIRED) -->
+		<script type="text/javascript" charset="utf-8">
+			// disable HTML quicklook plugin
+			// elFinder.prototype.commands.quicklook.plugins[1] = null;
+			// Documentation for client options:
+			// https://github.com/Studio-42/elFinder/wiki/Client-configuration-options
+			$(document).ready(function() {
+				var getLang = function() {
+					try {
+						var full_lng;
+						var loct = window.location.search;
+						var locm;
+						if (loct && (locm = loct.match(/lang=([a-zA-Z_-]+)/))) {
+							full_lng = locm[1];
+						} else {
+							full_lng = (navigator.browserLanguage || navigator.language || navigator.userLanguage);
+						}
+						var lng = full_lng.substr(0,2);
+						if (lng == 'ja') lng = 'jp';
+						else if (lng == 'pt') lng = 'pt_BR';
+						else if (lng == 'zh') lng = (full_lng.substr(0,5) == 'zh-tw')? 'zh_TW' : 'zh_CN';
+
+						if (lng != 'en') {
+							var script_tag		= document.createElement("script");
+							script_tag.type		= "text/javascript";
+							script_tag.src		= "js/i18n/elfinder."+lng+".js";
+							script_tag.charset = "utf-8";
+							$("head").append(script_tag);
+						}
+
+						return lng;
+					} catch(e) {
+						return 'en';
+					}
+				};
+				var elfinderInstance = $('#elfinder').elfinder({
+					resizable: false,
+					height: $(window).height() - 20,
+					ui  : ['toolbar', 'places', 'tree', 'path', 'stat'],
+					url : '/connector',  // connector URL (REQUIRED)
+					lang: getLang()                     // language (OPTIONAL)
+				}).elfinder('instance');
+
+				// set document.title dynamically etc.
+				var title = document.title;
+				elfinderInstance.bind('open', function(event) {
+					var data = event.data || null;
+					var path = '';
+					
+					if (data && data.cwd) {
+						path = elfinderInstance.path(data.cwd.hash) || null;
+					}
+					document.title =  path? path + ':' + title : title;
+				});
+
+				// fit to window.height on window.resize
+				var resizeTimer = null;
+				$(window).resize(function() {
+					resizeTimer && clearTimeout(resizeTimer);
+					resizeTimer = setTimeout(function() {
+						var h = parseInt($(window).height()) - 20;
+						if (h != parseInt($('#elfinder').height())) {
+							elfinderInstance.resize('100%', h);
+						}
+					}, 200);
+				});
+
+			});
+		</script>
+	</head>
+	<body>
+
+		<!-- Element where elFinder will be created (REQUIRED) -->
+		<div id="elfinder" style="height:100%;"></div>
+
+	</body>
+</html>
